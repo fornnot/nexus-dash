@@ -72,6 +72,8 @@ export interface NewsItem {
   url: string;
   /** Optional 1-line summary kept tiny for low-data mode. */
   summary?: string;
+  /** Feed grouping: Nigerian outlets vs international. */
+  section?: 'nigeria' | 'world';
 }
 
 export type FeedKind = 'scores' | 'news';

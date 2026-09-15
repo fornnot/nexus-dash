@@ -1,10 +1,13 @@
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { CommandPalette } from '@/shell/CommandPalette';
 import { OfflineBanner, TabBar, TopBar } from '@/shell/Chrome';
 import { matchRoute, useHashRoute } from '@/core/router';
 import { modules } from '@/modules/registry';
 import { Icon } from '@/core/icons';
 import { Spinner } from '@/core/primitives';
+
+// Homepage headlines: lazy-loaded so the feed module stays out of the main bundle.
+const HomeNews = lazy(() => import('@/modules/feed/News').then((m) => ({ default: m.HomeNewsCard })));
 
 function useOnline(): boolean {
   const [online, setOnline] = useState(() => navigator.onLine);
@@ -64,6 +67,10 @@ function HomePage({ onOpenPalette }: { onOpenPalette: () => void }) {
           </a>
         ))}
       </div>
+
+      <Suspense fallback={<div className="h-28 animate-pulse rounded-2xl bg-zinc-900/60" />}>
+        <HomeNews />
+      </Suspense>
     </div>
   );
 }

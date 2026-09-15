@@ -13,9 +13,9 @@ export const feedTools: ToolDefinition[] = [
   },
   {
     id: 'feed.news',
-    title: 'Micro-news',
-    description: 'Headlines in under a kilobyte',
-    keywords: ['news', 'headlines', 'feed', 'updates'],
+    title: 'News — Nigeria & World',
+    description: 'Nigerian and world headlines, low-data',
+    keywords: ['news', 'nigeria', 'nigerian', 'headlines', 'world', 'feed', 'updates'],
     group: 'Feed',
     icon: <Icon.feed className="size-4" />,
     route: '/feed',

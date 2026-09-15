@@ -58,24 +58,27 @@ export const demoMatches: LiveMatch[] = [
 export const demoNews: NewsItem[] = [
   {
     id: 'demo-n1',
-    title: 'Transfer window: the five moves that actually happened',
+    title: 'National grid: power restored across three regions',
     source: 'Demo Wire',
+    section: 'nigeria',
     publishedAt: new Date(Date.now() - 3 * HOUR).toISOString(),
     url: '#',
-    summary: 'A quiet deadline day, briefly summarised for low-data reading.',
+    summary: 'A quiet day, briefly summarised for low-data reading.',
   },
   {
     id: 'demo-n2',
-    title: 'Markets: central banks hold rates as inflation cools',
+    title: 'CBN holds policy rate as inflation cools',
     source: 'Demo Wire',
+    section: 'nigeria',
     publishedAt: new Date(Date.now() - 7 * HOUR).toISOString(),
     url: '#',
     summary: 'Two sentences, zero megabytes.',
   },
   {
     id: 'demo-n3',
-    title: 'Weekend preview: three derbies worth setting an alarm for',
+    title: 'Markets: central banks diverge on the path of rates',
     source: 'Demo Wire',
+    section: 'world',
     publishedAt: new Date(Date.now() - 20 * HOUR).toISOString(),
     url: '#',
   },
@@ -180,56 +183,124 @@ export async function fetchScores(): Promise<FeedPage<LiveMatch>> {
 /* ---------------------------------- News ---------------------------------- */
 
 /**
- * Hacker News front page via the Algolia API — one small request, CORS-open,
- * no key. Micro-news for makers, and perfect for a low-data feed.
+ * Nigerian-first headlines. Outlets don't send CORS headers, so RSS is pulled
+ * through a chain of CORS-open proxies: rss2json first (returns parsed JSON),
+ * then allorigins raw + DOMParser as a fallback. Sources are fetched in
+ * parallel and one failing source never kills the whole feed.
  */
-const HN_URL = 'https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=12';
 
-interface HnHit {
-  objectID?: string;
-  title?: string;
-  url?: string | null;
-  author?: string;
-  points?: number;
-  num_comments?: number;
-  created_at?: string;
+export interface NewsSource {
+  name: string;
+  feedUrl: string;
+  section: 'nigeria' | 'world';
 }
 
+const NEWS_SOURCES: NewsSource[] = [
+  { name: 'Punch', feedUrl: 'https://www.punchng.com/feed/', section: 'nigeria' },
+  { name: 'Premium Times', feedUrl: 'https://www.premiumtimesng.com/feed', section: 'nigeria' },
+  { name: 'Channels TV', feedUrl: 'https://www.channelstv.com/feed/', section: 'nigeria' },
+  { name: 'BBC World', feedUrl: 'https://feeds.bbci.co.uk/news/world/rss.xml', section: 'world' },
+  { name: 'Al Jazeera', feedUrl: 'https://www.aljazeera.com/xml/rss/all.xml', section: 'world' },
+];
+
+const NIGERIA_LIMIT = 9;
+const WORLD_LIMIT = 6;
+
+const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const ALLORIGINS = 'https://api.allorigins.win/raw?url=';
+
+interface RawRssItem {
+  title?: string;
+  link?: string;
+  pubDate?: string;
+  description?: string;
+}
+
+/** rss2json emits `YYYY-MM-DD HH:MM:SS` in UTC; raw feeds emit RFC-822. */
+function toIso(raw: string | undefined): string {
+  if (!raw) return new Date().toISOString();
+  const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)
+    ? `${raw.replace(' ', 'T')}Z`
+    : raw;
+  const ms = Date.parse(normalized);
+  return new Date(Number.isNaN(ms) ? Date.now() : ms).toISOString();
+}
+
+const stripHtml = (html: string | undefined): string | undefined =>
+  html
+    ?.replace(/<[^>]*>/g, ' ')
+    .replace(/&[a-z#0-9]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 150) || undefined;
+
+async function fetchViaRss2Json(feedUrl: string): Promise<RawRssItem[]> {
+  const res = await fetch(`${RSS2JSON}${encodeURIComponent(feedUrl)}`);
+  if (!res.ok) throw new Error(`rss2json HTTP ${res.status}`);
+  const body = (await res.json()) as { status?: string; items?: RawRssItem[] };
+  if (body.status !== 'ok' || !body.items?.length) throw new Error('rss2json: empty feed');
+  return body.items;
+}
+
+function parseRssXml(xml: string): RawRssItem[] {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('invalid XML');
+  return Array.from(doc.querySelectorAll('item, entry'))
+    .map((node): RawRssItem => {
+      const pick = (sel: string): string | undefined =>
+        node.querySelector(sel)?.textContent?.trim() || undefined;
+      const link = pick('link') ?? node.querySelector('link[rel="alternate"]')?.getAttribute('href') ?? undefined;
+      return {
+        title: pick('title'),
+        link,
+        pubDate: pick('pubDate') ?? pick('published') ?? pick('updated'),
+        description: pick('description') ?? pick('summary'),
+      };
+    })
+    .filter((i): i is RawRssItem & { title: string; link: string } => Boolean(i.title && i.link));
+}
+
+async function fetchViaAllOrigins(feedUrl: string): Promise<RawRssItem[]> {
+  const res = await fetch(`${ALLORIGINS}${encodeURIComponent(feedUrl)}`);
+  if (!res.ok) throw new Error(`allorigins HTTP ${res.status}`);
+  return parseRssXml(await res.text());
+}
+
+const PROXIES = [fetchViaRss2Json, fetchViaAllOrigins];
+
+async function fetchSource(src: NewsSource): Promise<NewsItem[]> {
+  for (const proxy of PROXIES) {
+    try {
+      const raw = await proxy(src.feedUrl);
+      if (raw.length === 0) continue;
+      return raw.slice(0, 4).map((r, i) => ({
+        id: r.link ?? `${src.name}-${i}`.toLowerCase().replace(/\s+/g, '-'),
+        title: r.title ?? 'Untitled',
+        source: src.name,
+        section: src.section,
+        publishedAt: toIso(r.pubDate),
+        url: r.link ?? '#',
+        summary: stripHtml(r.description),
+      }));
+    } catch {
+      // Proxy failed — fall through to the next one.
+    }
+  }
+  return [];
+}
+
+const byNewest = (a: NewsItem, b: NewsItem): number => Date.parse(b.publishedAt) - Date.parse(a.publishedAt);
+
 export async function fetchNews(): Promise<FeedPage<NewsItem>> {
-  try {
-    const res = await fetch(HN_URL);
-    if (!res.ok) throw new Error(`HN HTTP ${res.status}`);
-    const body = (await res.json()) as { hits?: HnHit[] };
+  const results = await Promise.allSettled(NEWS_SOURCES.map(fetchSource));
+  const items = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 
-    const items: NewsItem[] = (body.hits ?? [])
-      .filter((h) => h.objectID && h.title)
-      .map((h) => {
-        let host = 'news.ycombinator.com';
-        if (h.url) {
-          try {
-            host = new URL(h.url).hostname.replace(/^www\./, '');
-          } catch {
-            // keep default host
-          }
-        }
-        const meta: string[] = [];
-        if (typeof h.points === 'number') meta.push(`${h.points} pts`);
-        if (typeof h.num_comments === 'number') meta.push(`${h.num_comments} comments`);
-        if (h.author) meta.push(`by ${h.author}`);
+  const nigeria = items.filter((n) => n.section !== 'world').sort(byNewest).slice(0, NIGERIA_LIMIT);
+  const world = items.filter((n) => n.section === 'world').sort(byNewest).slice(0, WORLD_LIMIT);
 
-        return {
-          id: `hn-${h.objectID}`,
-          title: h.title!,
-          source: host,
-          publishedAt: h.created_at ?? new Date().toISOString(),
-          url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
-          summary: meta.join(' · ') || undefined,
-        } satisfies NewsItem;
-      });
-
-    if (items.length === 0) throw new Error('HN returned no usable hits');
-    return { kind: 'news', items, fetchedAt: Date.now(), stale: false };
-  } catch {
+  // Every source failed → offline or blocked; degrade to demo data.
+  if (nigeria.length === 0 && world.length === 0) {
     return { kind: 'news', items: demoNews, fetchedAt: Date.now(), stale: true };
   }
+  return { kind: 'news', items: [...nigeria, ...world], fetchedAt: Date.now(), stale: false };
 }
