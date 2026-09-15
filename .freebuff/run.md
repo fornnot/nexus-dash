@@ -56,5 +56,6 @@ npm run dev         # → http://localhost:5173
 Notes:
 
 - External APIs used at runtime: `api.frankfurter.dev` (fiat FX), `api.coingecko.com`
-  (BTC), `api.allorigins.win` (feed proxy — falls back to demo data on failure).
+  (BTC), `site.api.espn.com` (scores — EPL, La Liga, NBA, NFL), `hn.algolia.com`
+  (front-page news). All are keyless and CORS-open; failures degrade to demo data.
 - Hash-based routing (`#/fx`, `#/utilities`, `#/feed`) — no server rewrites needed.
