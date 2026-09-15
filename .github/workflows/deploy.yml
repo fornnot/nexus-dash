@@ -32,9 +32,13 @@ jobs:
       - run: npm run lint
 
       # Sets base to /<repo>/ for project pages (empty for user/org pages).
+      # enablement: true lets the action turn on Pages (Actions source) itself,
+      # so no manual Settings → Pages step is required.
       - name: Configure Pages
         id: pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Build
         run: npm run build
