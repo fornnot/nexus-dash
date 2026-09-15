@@ -2,7 +2,8 @@ import type { NewsItem } from '@/core/types';
 import { Badge, Button, Card, Spinner, StaleChip } from '@/core/primitives';
 import { Icon } from '@/core/icons';
 import { useNews } from './useFeeds';
-import { fmtRelativeTime } from '@/core/utils';
+import { allNewsSources } from './api';
+import { fmtRelativeTime, cx } from '@/core/utils';
 
 function HeadlineList({ items }: { items: NewsItem[] }) {
   return (
@@ -27,11 +28,48 @@ function HeadlineList({ items }: { items: NewsItem[] }) {
   );
 }
 
+/** Toggleable chip per registered outlet; shared state lives in the prefs hook. */
+function OutletToggles({
+  enabled,
+  onToggle,
+}: {
+  enabled: ReadonlySet<string>;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-1.5" aria-label="News outlets">
+      {allNewsSources.map((s) => {
+        const active = enabled.has(s.id);
+        return (
+          <button
+            key={s.id}
+            onClick={() => onToggle(s.id)}
+            aria-pressed={active}
+            title={active ? `Hide ${s.name}` : `Show ${s.name}`}
+            className={cx(
+              'rounded-full border px-2 py-0.5 text-[11px] transition-colors',
+              active
+                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
+                : 'border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300',
+            )}
+          >
+            {s.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function News() {
-  const { page, loading, refresh } = useNews();
+  const { page, loading, refresh, enabledSources, toggleSource } = useNews();
   const items = page?.items ?? [];
   const nigeria = items.filter((n) => n.section !== 'world');
   const world = items.filter((n) => n.section === 'world');
+  const activeNames = allNewsSources
+    .filter((s) => enabledSources.has(s.id))
+    .map((s) => s.name)
+    .join(' · ');
 
   return (
     <Card>
@@ -46,6 +84,8 @@ export function News() {
           </Button>
         </span>
       </div>
+
+      <OutletToggles enabled={enabledSources} onToggle={toggleSource} />
 
       {nigeria.length > 0 && (
         <section className="mb-4">
@@ -72,7 +112,7 @@ export function News() {
       <p className="mt-3 text-[10px] text-zinc-600">
         {page?.stale
           ? 'Showing demo data — news feeds unreachable (offline or blocked)'
-          : 'Live RSS: Punch · Premium Times · Channels TV · BBC · Al Jazeera · refreshes every 5 minutes'}
+          : `Live RSS: ${activeNames} · refreshes every 5 minutes`}
       </p>
     </Card>
   );

@@ -25,7 +25,8 @@ registerRoute(
     url.hostname === 'api.coingecko.com' ||
     url.hostname === 'site.api.espn.com' ||
     url.hostname === 'api.rss2json.com' ||
-    url.hostname === 'api.allorigins.win',
+    url.hostname === 'api.allorigins.win' ||
+    url.hostname === 'api.codetabs.com',
   new StaleWhileRevalidate({
     cacheName: 'nexus-runtime-data',
     plugins: [

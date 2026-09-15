@@ -57,7 +57,11 @@ Notes:
 
 - External APIs used at runtime: `api.frankfurter.dev` (fiat FX), `api.coingecko.com`
   (BTC), `site.api.espn.com` (scores — EPL, La Liga, NBA, NFL) and RSS news via a
-  proxy chain (`api.rss2json.com` primary, `api.allorigins.win` fallback) pulling
-  Punch / Premium Times / Channels TV / BBC World / Al Jazeera. All keyless;
+  proxy chain (`api.rss2json.com` primary; `api.allorigins.win`, `api.codetabs.com`
+  fallbacks) pulling Punch / Premium Times / Channels TV / Vanguard / The Cable /
+  Daily Trust / BBC World / Al Jazeera. Vanguard and The Cable are
+  Cloudflare-hardened, so they also carry Google News RSS mirrors as alternate
+  feeds. The enabled-outlet set is user-toggleable in the feed module and
+  persisted in localStorage (`nexus.news.sources`). All keyless;
   individual source or proxy failures degrade gracefully (per-source skip, then demo data).
 - Hash-based routing (`#/fx`, `#/utilities`, `#/feed`) — no server rewrites needed.

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FeedPage, LiveMatch, NewsItem } from '@/core/types';
 import { fetchNews, fetchScores } from './api';
+import { loadEnabledSources, saveEnabledSources } from './prefs';
 
 const SCORES_INTERVAL = 60_000;
 const NEWS_INTERVAL = 5 * 60_000;
@@ -32,4 +33,27 @@ function usePollingFeed<T>(fetcher: () => Promise<FeedPage<T>>, intervalMs: numb
 }
 
 export const useScores = () => usePollingFeed<LiveMatch>(fetchScores, SCORES_INTERVAL);
-export const useNews = () => usePollingFeed<NewsItem>(fetchNews, NEWS_INTERVAL);
+
+/** News feed bound to the persisted outlet preference. */
+export function useNews() {
+  const [enabled, setEnabled] = useState<Set<string>>(loadEnabledSources);
+  const fetcher = useCallback(() => fetchNews(enabled), [enabled]);
+  const feed = usePollingFeed<NewsItem>(fetcher, NEWS_INTERVAL);
+
+  /** Toggles an outlet; refetches immediately and persists the choice. */
+  const toggleSource = useCallback((id: string) => {
+    setEnabled((prev) => {
+      const next = new Set(prev);
+      // Keep at least one outlet so the feed is never empty by choice.
+      if (next.has(id)) {
+        if (next.size > 1) next.delete(id);
+      } else {
+        next.add(id);
+      }
+      saveEnabledSources(next);
+      return next;
+    });
+  }, []);
+
+  return { ...feed, enabledSources: enabled, toggleSource };
+}

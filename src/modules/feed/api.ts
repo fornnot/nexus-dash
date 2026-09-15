@@ -185,23 +185,48 @@ export async function fetchScores(): Promise<FeedPage<LiveMatch>> {
 /**
  * Nigerian-first headlines. Outlets don't send CORS headers, so RSS is pulled
  * through a chain of CORS-open proxies: rss2json first (returns parsed JSON),
- * then allorigins raw + DOMParser as a fallback. Sources are fetched in
- * parallel and one failing source never kills the whole feed.
+ * then allorigins/codetabs raw + DOMParser as fallbacks. Sources are fetched
+ * in parallel and one failing source never kills the whole feed.
+ *
+ * Cloudflare-hardened outlets (Vanguard, The Cable) reject proxy requests, so
+ * they carry a Google News RSS mirror as an alternate feed.
  */
 
 export interface NewsSource {
+  /** Stable key used by the outlet toggle + localStorage preference. */
+  id: string;
   name: string;
   feedUrl: string;
   section: 'nigeria' | 'world';
+  /** Alternate feed tried when the primary fails through every proxy. */
+  altFeedUrl?: string;
 }
 
 const NEWS_SOURCES: NewsSource[] = [
-  { name: 'Punch', feedUrl: 'https://www.punchng.com/feed/', section: 'nigeria' },
-  { name: 'Premium Times', feedUrl: 'https://www.premiumtimesng.com/feed', section: 'nigeria' },
-  { name: 'Channels TV', feedUrl: 'https://www.channelstv.com/feed/', section: 'nigeria' },
-  { name: 'BBC World', feedUrl: 'https://feeds.bbci.co.uk/news/world/rss.xml', section: 'world' },
-  { name: 'Al Jazeera', feedUrl: 'https://www.aljazeera.com/xml/rss/all.xml', section: 'world' },
+  { id: 'punch', name: 'Punch', feedUrl: 'https://www.punchng.com/feed/', section: 'nigeria' },
+  { id: 'premium-times', name: 'Premium Times', feedUrl: 'https://www.premiumtimesng.com/feed', section: 'nigeria' },
+  { id: 'channelstv', name: 'Channels TV', feedUrl: 'https://www.channelstv.com/feed/', section: 'nigeria' },
+  {
+    id: 'vanguard',
+    name: 'Vanguard',
+    feedUrl: 'https://www.vanguardngr.com/feed/',
+    altFeedUrl: 'https://news.google.com/rss/search?q=when:2d+site:vanguardngr.com&hl=en-NG&gl=NG&ceid=NG:en',
+    section: 'nigeria',
+  },
+  {
+    id: 'thecable',
+    name: 'The Cable',
+    feedUrl: 'https://www.thecable.ng/feed',
+    altFeedUrl: 'https://news.google.com/rss/search?q=when:2d+site:thecable.ng&hl=en-NG&gl=NG&ceid=NG:en',
+    section: 'nigeria',
+  },
+  { id: 'dailytrust', name: 'Daily Trust', feedUrl: 'https://www.dailytrust.com/feed/', section: 'nigeria' },
+  { id: 'bbc', name: 'BBC World', feedUrl: 'https://feeds.bbci.co.uk/news/world/rss.xml', section: 'world' },
+  { id: 'aljazeera', name: 'Al Jazeera', feedUrl: 'https://www.aljazeera.com/xml/rss/all.xml', section: 'world' },
 ];
+
+/** All registered outlets, for building the toggle UI. */
+export const allNewsSources = NEWS_SOURCES;
 
 const NIGERIA_LIMIT = 9;
 const WORLD_LIMIT = 6;
@@ -266,24 +291,36 @@ async function fetchViaAllOrigins(feedUrl: string): Promise<RawRssItem[]> {
   return parseRssXml(await res.text());
 }
 
-const PROXIES = [fetchViaRss2Json, fetchViaAllOrigins];
+const CODETABS = 'https://api.codetabs.com/v1/proxy?quest=';
 
+async function fetchViaCodeTabs(feedUrl: string): Promise<RawRssItem[]> {
+  const res = await fetch(`${CODETABS}${encodeURIComponent(feedUrl)}`);
+  if (!res.ok) throw new Error(`codetabs HTTP ${res.status}`);
+  return parseRssXml(await res.text());
+}
+
+const PROXIES = [fetchViaRss2Json, fetchViaAllOrigins, fetchViaCodeTabs];
+
+/** Tries every proxy against the primary feed, then again against the mirror. */
 async function fetchSource(src: NewsSource): Promise<NewsItem[]> {
-  for (const proxy of PROXIES) {
-    try {
-      const raw = await proxy(src.feedUrl);
-      if (raw.length === 0) continue;
-      return raw.slice(0, 4).map((r, i) => ({
-        id: r.link ?? `${src.name}-${i}`.toLowerCase().replace(/\s+/g, '-'),
-        title: r.title ?? 'Untitled',
-        source: src.name,
-        section: src.section,
-        publishedAt: toIso(r.pubDate),
-        url: r.link ?? '#',
-        summary: stripHtml(r.description),
-      }));
-    } catch {
-      // Proxy failed — fall through to the next one.
+  const feedUrls = [src.feedUrl, src.altFeedUrl].filter((u): u is string => Boolean(u));
+  for (const feedUrl of feedUrls) {
+    for (const proxy of PROXIES) {
+      try {
+        const raw = await proxy(feedUrl);
+        if (raw.length === 0) continue;
+        return raw.slice(0, 4).map((r, i) => ({
+          id: r.link ?? `${src.name}-${i}`.toLowerCase().replace(/\s+/g, '-'),
+          title: r.title ?? 'Untitled',
+          source: src.name,
+          section: src.section,
+          publishedAt: toIso(r.pubDate),
+          url: r.link ?? '#',
+          summary: stripHtml(r.description),
+        }));
+      } catch {
+        // Proxy failed — fall through to the next one.
+      }
     }
   }
   return [];
@@ -291,14 +328,18 @@ async function fetchSource(src: NewsSource): Promise<NewsItem[]> {
 
 const byNewest = (a: NewsItem, b: NewsItem): number => Date.parse(b.publishedAt) - Date.parse(a.publishedAt);
 
-export async function fetchNews(): Promise<FeedPage<NewsItem>> {
-  const results = await Promise.allSettled(NEWS_SOURCES.map(fetchSource));
+export async function fetchNews(enabledIds?: ReadonlySet<string>): Promise<FeedPage<NewsItem>> {
+  const sources = enabledIds
+    ? NEWS_SOURCES.filter((s) => enabledIds.has(s.id))
+    : NEWS_SOURCES;
+
+  const results = await Promise.allSettled(sources.map(fetchSource));
   const items = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 
   const nigeria = items.filter((n) => n.section !== 'world').sort(byNewest).slice(0, NIGERIA_LIMIT);
   const world = items.filter((n) => n.section === 'world').sort(byNewest).slice(0, WORLD_LIMIT);
 
-  // Every source failed → offline or blocked; degrade to demo data.
+  // Every enabled source failed → offline or blocked; degrade to demo data.
   if (nigeria.length === 0 && world.length === 0) {
     return { kind: 'news', items: demoNews, fetchedAt: Date.now(), stale: true };
   }

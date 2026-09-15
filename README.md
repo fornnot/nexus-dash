@@ -8,7 +8,7 @@ A single lightweight, installable PWA combining daily search utilities and real-
 | --- | --- | --- |
 | **FX & Finance** | `#/fx` | Live ECB fiat rates (Frankfurter) + BTC (CoinGecko), conversion calculator, cross-rate table. Cached for offline use. |
 | **Offline Utilities** | `#/utilities` | JSON formatter/minifier, image resizer (canvas), text case/count tools, text→PDF export (pdf-lib, lazy-loaded). All 100% client-side — works with zero connectivity. |
-| **Live Feed** | `#/feed` | Low-data sports scores (60 s poll) + Nigerian-first news (Punch, Premium Times, Channels TV) and world headlines (BBC, Al Jazeera) every 5 min, with a headlines card on the homepage and cached fallback when offline. |
+| **Live Feed** | `#/feed` | Low-data sports scores (60 s poll) + Nigerian-first news (Punch, Premium Times, Channels TV, Vanguard, The Cable, Daily Trust) and world headlines (BBC, Al Jazeera) every 5 min, with an outlet toggle, a homepage headlines card, and cached fallback when offline. |
 
 ## Folder structure
 
@@ -57,7 +57,8 @@ nexus-dash/
         │   └── tools/          # JsonTool · ImageTool · TextTool · PdfTool
         └── feed/
             ├── manifest.tsx
-            ├── api.ts          # Scores (ESPN) + news (RSS proxy chain), demo fallback
+            ├── api.ts          # Scores (ESPN) + news (RSS proxy chain), source registry, demo fallback
+            ├── prefs.ts        # Persisted enabled-outlets preference (localStorage)
             ├── useFeeds.ts     # Visibility-aware polling hooks
             ├── Scores.tsx · News.tsx · FeedModule.tsx
 ```
