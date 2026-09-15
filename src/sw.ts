@@ -23,6 +23,8 @@ registerRoute(
     url.hostname === 'api.frankfurter.app' ||
     url.hostname === 'api.frankfurter.dev' ||
     url.hostname === 'api.coingecko.com' ||
+    url.hostname === 'site.api.espn.com' ||
+    url.hostname === 'hn.algolia.com' ||
     url.hostname === 'api.allorigins.win',
   new StaleWhileRevalidate({
     cacheName: 'nexus-runtime-data',

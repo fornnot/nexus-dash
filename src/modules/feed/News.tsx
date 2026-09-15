@@ -47,8 +47,8 @@ export function News() {
 
       <p className="mt-2 text-[10px] text-zinc-600">
         {page?.stale
-          ? 'Showing demo data — connect a news endpoint in src/modules/feed/api.ts'
-          : 'Refreshes every 5 minutes'}
+          ? 'Showing demo data — Hacker News unreachable (offline or blocked)'
+          : 'Live from Hacker News · refreshes every 5 minutes'}
       </p>
     </Card>
   );

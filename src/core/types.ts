@@ -44,7 +44,7 @@ export interface CommandAction {
 
 /* ------------------------------ Live feed data ---------------------------- */
 
-export type Sport = 'football' | 'basketball' | 'tennis';
+export type Sport = 'soccer' | 'football' | 'basketball' | 'tennis';
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished';
 

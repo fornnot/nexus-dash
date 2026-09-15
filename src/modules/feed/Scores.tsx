@@ -66,8 +66,8 @@ export function Scores() {
 
       <p className={cx('mt-2 text-[10px]', page?.stale ? 'text-amber-400/80' : 'text-zinc-600')}>
         {page?.stale
-          ? 'Showing demo data — connect a scores endpoint in src/modules/feed/api.ts'
-          : 'Updates every 60s while the tab is open'}
+          ? 'Showing demo data — live score endpoints unreachable (offline or blocked)'
+          : 'Live via ESPN · updates every 60s while the tab is open'}
       </p>
     </Card>
   );
