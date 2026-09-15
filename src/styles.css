@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-base: #09090b;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-base);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Compact scrollbars that match the dark chrome. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f46 transparent;
+}
