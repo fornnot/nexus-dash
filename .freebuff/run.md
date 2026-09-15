@@ -1,13 +1,20 @@
 # Run doc — NexusDash (nexus-dash)
 
-## Deploy to Render (production)
+## Deploy (production)
 
-A Render Blueprint is committed at `render.yaml` (static site, `npm ci && npm run build`,
-publish `./dist`, immutable asset caching + SPA rewrite). To launch:
+Two committed options — GitHub Pages is the primary:
 
-1. Push this repo to GitHub.
-2. Open https://dashboard.render.com/select-repo?type=blueprint and pick the repo —
-   Render reads `render.yaml` and provisions everything.
+**GitHub Pages** (`.github/workflows/deploy.yml`): after pushing to GitHub,
+enable Settings → Pages → Source: **GitHub Actions**. Every push to `main`
+runs typecheck + lint, builds with base `/<repo>/` (via `GITHUB_PAGES_BASE`
+from actions/configure-pages), adds a `404.html` SPA fallback, and deploys.
+Local simulation of the subpath build: `MSYS_NO_PATHCONV=1 GITHUB_PAGES_BASE=/nexus-dash/ npm run build`
+(the MSYS guard is only needed in Git Bash).
+
+**Render** (`render.yaml` Blueprint): push to GitHub, then open
+https://dashboard.render.com/select-repo?type=blueprint and pick the repo —
+static site, `npm ci && npm run build`, publishes `./dist` at root with
+immutable asset caching.
 
 ## Reproduce the artifacts
 

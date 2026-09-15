@@ -77,6 +77,12 @@ nexus-dash/
 3. **App-level cache** — `useCachedFetch` mirrors payloads into `localStorage`, so the last FX snapshot and feeds render instantly, even before the SW is active.
 4. **Utilities** — pure client-side (canvas, Blob, pdf-lib); no network at all.
 
+## Deploying
+
+**GitHub Pages (primary):** push to GitHub and set Settings → Pages → Source to **GitHub Actions**. The committed workflow runs typecheck + lint, builds with base `/<repo>/`, adds a 404 fallback, and deploys on every push to `main` → `https://<user>.github.io/<repo>/`.
+
+**Render:** a Blueprint (`render.yaml`) is included — pick the repo at https://dashboard.render.com/select-repo?type=blueprint and Render builds/serves `dist/` at a root domain.
+
 ## Local setup
 
 ```bash

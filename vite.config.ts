@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
 
 export default defineConfig({
+  // GitHub Pages project sites serve under /<repo>/; the deploy workflow sets
+  // GITHUB_PAGES_BASE via actions/configure-pages. Defaults to root hosting.
+  base: process.env.GITHUB_PAGES_BASE || '/',
   plugins: [
     react(),
     tailwindcss(),
@@ -20,16 +23,17 @@ export default defineConfig({
         name: 'Nexus Dash',
         short_name: 'Nexus',
         description: 'Offline-first super dashboard: FX tracker, offline utilities, and a low-data live feed.',
-        start_url: '/',
-        scope: '/',
+        // Base-agnostic paths: browsers resolve these against the manifest URL.
+        start_url: '.',
+        scope: '.',
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#09090b',
         theme_color: '#09090b',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       includeAssets: ['favicon.svg'],
