@@ -1,6 +1,6 @@
 import type { FeedPage, LiveMatch, MatchStatus, NewsItem, Sport } from '@/core/types';
 
-/* ------------------------------ Demo fallback ------------------------------ */
+/* ------------------------------ Demo fallback ----------------------------- */
 
 const HOUR = 3600_000;
 
@@ -93,11 +93,24 @@ export const demoNews: NewsItem[] = [
  */
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports';
 
-const LEAGUES: Array<{ path: string; sport: Sport; league: string }> = [
+/** Every major league surfaced on the Sport tab. */
+export const LEAGUES: Array<{ path: string; sport: Sport; league: string }> = [
+  // Football (soccer)
   { path: 'soccer/eng.1', sport: 'soccer', league: 'Premier League' },
   { path: 'soccer/esp.1', sport: 'soccer', league: 'La Liga' },
+  { path: 'soccer/ita.1', sport: 'soccer', league: 'Serie A' },
+  { path: 'soccer/ger.1', sport: 'soccer', league: 'Bundesliga' },
+  { path: 'soccer/fra.1', sport: 'soccer', league: 'Ligue 1' },
+  { path: 'soccer/uefa.champions', sport: 'soccer', league: 'Champions League' },
+  { path: 'soccer/nga.1', sport: 'soccer', league: 'NPFL' },
+  // US major leagues
   { path: 'basketball/nba', sport: 'basketball', league: 'NBA' },
+  { path: 'basketball/wnba', sport: 'basketball', league: 'WNBA' },
   { path: 'football/nfl', sport: 'football', league: 'NFL' },
+  { path: 'baseball/mlb', sport: 'baseball', league: 'MLB' },
+  { path: 'hockey/nhl', sport: 'hockey', league: 'NHL' },
+  // College
+  { path: 'basketball/mens-college-basketball', sport: 'basketball', league: 'NCAAM' },
 ];
 
 interface EspnScoreboard {

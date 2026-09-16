@@ -2,13 +2,13 @@ import type { ComponentType, ReactNode } from 'react';
 
 /* ----------------------------- Module registry ---------------------------- */
 
-export type ModuleId = 'fx' | 'utilities' | 'feed';
+export type ModuleId = 'news' | 'sport' | 'fx' | 'tools';
 
 /** Everything the shell needs to mount a module. */
 export interface ModuleDefinition {
   id: ModuleId;
   name: string;
-  /** Short tagline shown in the home dashboard cards. */
+  /** Short tagline shown in the command palette. */
   tagline: string;
   /** Drawn from src/core/icons. */
   icon: ReactNode;
@@ -30,7 +30,7 @@ export interface ToolDefinition {
   description: string;
   keywords: string[];
   /** Palette grouping. */
-  group: 'FX' | 'Utilities' | 'Feed' | 'Navigate';
+  group: 'News' | 'Sport' | 'FX' | 'Tools' | 'Navigate';
   icon: ReactNode;
   /** In-module deep link (hash route, e.g. `/utilities#json-format`). */
   route: string;
@@ -44,7 +44,7 @@ export interface CommandAction {
 
 /* ------------------------------ Live feed data ---------------------------- */
 
-export type Sport = 'soccer' | 'football' | 'basketball' | 'tennis';
+export type Sport = 'soccer' | 'football' | 'basketball' | 'baseball' | 'hockey';
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished';
 

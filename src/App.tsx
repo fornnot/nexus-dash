@@ -1,13 +1,9 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { CommandPalette } from '@/shell/CommandPalette';
 import { OfflineBanner, TabBar, TopBar } from '@/shell/Chrome';
 import { matchRoute, useHashRoute } from '@/core/router';
 import { modules } from '@/modules/registry';
-import { Icon } from '@/core/icons';
 import { Spinner } from '@/core/primitives';
-
-// Homepage headlines: lazy-loaded so the feed module stays out of the main bundle.
-const HomeNews = lazy(() => import('@/modules/feed/News').then((m) => ({ default: m.HomeNewsCard })));
 
 function useOnline(): boolean {
   const [online, setOnline] = useState(() => navigator.onLine);
@@ -32,49 +28,6 @@ function ModuleFallback() {
   );
 }
 
-function HomePage({ onOpenPalette }: { onOpenPalette: () => void }) {
-  return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-zinc-800/80 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6">
-        <h1 className="text-xl font-semibold tracking-tight text-zinc-100">Super Dashboard</h1>
-        <p className="mt-1 max-w-md text-sm text-zinc-400">
-          FX rates, offline utilities and a low-data live feed — in one lightweight, installable app.
-        </p>
-        <button
-          onClick={onOpenPalette}
-          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-sm text-zinc-300 hover:border-cyan-500/40 hover:text-cyan-200"
-        >
-          <Icon.search className="size-4" /> Open command bar
-          <kbd className="ml-2 rounded border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-500">⌘K</kbd>
-        </button>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        {modules.map((m) => (
-          <a
-            key={m.id}
-            href={`#${m.path}`}
-            className="group rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-4 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
-          >
-            <div className="flex items-center gap-2">
-              <span className={m.accent}>{m.icon}</span>
-              <span className="font-medium text-zinc-100">{m.name}</span>
-            </div>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">{m.tagline}</p>
-            <span className="mt-3 inline-flex items-center gap-1 text-xs text-zinc-500 group-hover:text-cyan-300">
-              Open <Icon.arrow className="size-3.5" />
-            </span>
-          </a>
-        ))}
-      </div>
-
-      <Suspense fallback={<div className="h-28 animate-pulse rounded-2xl bg-zinc-900/60" />}>
-        <HomeNews />
-      </Suspense>
-    </div>
-  );
-}
-
 export default function App() {
   const route = useHashRoute();
   const online = useOnline();
@@ -93,7 +46,8 @@ export default function App() {
   }, []);
 
   const { moduleId } = useMemo(() => matchRoute(route), [route]);
-  const active = modules.find((m) => m.id === moduleId);
+  // Home renders the News module — the default tab.
+  const active = modules.find((m) => m.id === moduleId) ?? modules[0];
   const Page = active?.component;
 
   return (
@@ -104,17 +58,30 @@ export default function App() {
       <main className="mx-auto w-full max-w-3xl px-4 pb-24 pt-4 sm:pl-20 xl:pl-4 sm:pr-4">
         <OfflineBanner online={online} />
         <div className="mt-4">
-          {Page ? (
-            <Suspense fallback={<ModuleFallback />}>
-              <Page />
-            </Suspense>
-          ) : (
-            <HomePage onOpenPalette={() => setPaletteOpen(true)} />
-          )}
+          <Suspense fallback={<ModuleFallback />}>
+            <Page />
+          </Suspense>
         </div>
+        {/* Keep the old hash routes working so PWA installs and bookmarks survive. */}
+        <HashRedirects />
       </main>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   );
+}
+
+/** One-shot redirects from the pre-restructure routes. */
+function HashRedirects() {
+  useEffect(() => {
+    const redirects: Record<string, string> = {
+      '/': '/news',
+      '/feed': '/sport',
+      '/utilities': '/tools',
+    };
+    const hash = window.location.hash.replace(/^#/, '') || '/';
+    const target = redirects[hash];
+    if (target) window.location.replace(`#${target}`);
+  }, []);
+  return null;
 }

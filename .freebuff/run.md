@@ -56,12 +56,15 @@ npm run dev         # → http://localhost:5173
 Notes:
 
 - External APIs used at runtime: `api.frankfurter.dev` (fiat FX), `api.coingecko.com`
-  (BTC), `site.api.espn.com` (scores — EPL, La Liga, NBA, NFL) and RSS news via a
+  (BTC), `site.api.espn.com` (scores — 13 leagues: EPL, La Liga, Serie A,
+  Bundesliga, Ligue 1, Champions League, NPFL, NBA, WNBA, NFL, MLB, NHL, NCAAM)
+  and RSS news via a
   proxy chain (`api.rss2json.com` primary; `api.allorigins.win`, `api.codetabs.com`
   fallbacks) pulling Punch / Premium Times / Channels TV / Vanguard / The Cable /
   Daily Trust / BBC World / Al Jazeera. Vanguard and The Cable are
   Cloudflare-hardened, so they also carry Google News RSS mirrors as alternate
-  feeds. The enabled-outlet set is user-toggleable in the feed module and
+  feeds. The enabled-outlet set is user-toggleable in the News tab and
   persisted in localStorage (`nexus.news.sources`). All keyless;
   individual source or proxy failures degrade gracefully (per-source skip, then demo data).
-- Hash-based routing (`#/fx`, `#/utilities`, `#/feed`) — no server rewrites needed.
+- Hash-based routing (`#/news` home, `#/sport`, `#/fx`, `#/tools`) — no server rewrites
+  needed; old `#/feed` and `#/utilities` routes redirect to their new homes.

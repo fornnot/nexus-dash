@@ -16,14 +16,14 @@ interface Item {
 
 const navCommands: Item[] = [
   {
-    key: 'nav-home',
-    title: 'Go to Dashboard',
-    description: 'Home overview',
+    key: 'nav-news',
+    title: 'Go to News',
+    description: 'Home tab — Nigerian + world headlines',
     group: 'Navigate',
-    icon: <Icon.home className="size-4" />,
-    go: () => navigate('/'),
+    icon: <Icon.feed className="size-4" />,
+    go: () => navigate('/news'),
   },
-  ...modules.map((m) => ({
+  ...modules.slice(1).map((m) => ({
     key: `nav-${m.id}`,
     title: `Go to ${m.name}`,
     description: m.tagline,
@@ -120,7 +120,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tools, rates, feeds…"
+            placeholder="Search news, scores, tools…"
             className="h-12 w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none"
           />
           <kbd className="hidden rounded border border-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-400 sm:block">ESC</kbd>

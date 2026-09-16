@@ -1,4 +1,4 @@
-import { allNewsSources } from './api';
+import { allNewsSources } from '../feed/feeds';
 
 const STORAGE_KEY = 'nexus.news.sources';
 

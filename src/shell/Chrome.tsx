@@ -9,7 +9,7 @@ export function TopBar({ onOpenPalette, online }: { onOpenPalette: () => void; o
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
-        <a href="#/" className="flex items-center gap-2 font-semibold tracking-tight text-zinc-100">
+        <a href="#/news" className="flex items-center gap-2 font-semibold tracking-tight text-zinc-100">
           <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-violet-500 text-[13px] font-bold text-zinc-950">
             N
           </span>
@@ -37,14 +37,14 @@ export function TopBar({ onOpenPalette, online }: { onOpenPalette: () => void; o
   );
 }
 
-/** Bottom tab bar (mobile) / left rail (sm+). */
+/** Bottom tab bar (mobile) / left rail (sm+). Home tab = News. */
 export function TabBar({ route }: { route: string }) {
   const isActive = (path: string) =>
-    path === '/' ? route === '/' || route === '' : route === path || route.startsWith(`${path}/`) || route.startsWith(`${path}#`);
+    route === path || route.startsWith(`${path}/`) || route.startsWith(`${path}#`);
 
   const items = [
-    { path: '/', label: 'Home', icon: <Icon.home className="size-5" /> },
-    ...modules.map((m) => ({ path: m.path, label: m.name.split(' ')[0], icon: m.icon })),
+    { path: '/news', label: 'News', icon: <Icon.feed className="size-5" /> },
+    ...modules.slice(1).map((m) => ({ path: m.path, label: m.name, icon: m.icon })),
   ];
 
   return (
@@ -103,7 +103,7 @@ export function OfflineBanner({ online }: { online: boolean }) {
   return (
     <div className="mx-auto mt-2 flex max-w-3xl items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
       <Icon.wifiOff className="size-4 shrink-0" />
-      <span className="flex-1">You're offline — utilities work fully, feeds show cached data.</span>
+      <span className="flex-1">You're offline — tools work fully, feeds show cached data.</span>
       <button onClick={() => setDismissed(true)} className="text-amber-300/80 hover:text-amber-100">
         ✕
       </button>
