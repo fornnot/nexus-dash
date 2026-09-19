@@ -7,8 +7,9 @@ A single lightweight, installable PWA combining daily search utilities and real-
 | Module | Route | Highlights |
 | --- | --- | --- |
 | **FX & Finance** | `#/fx` | Live ECB fiat rates (Frankfurter) + BTC (CoinGecko), conversion calculator, cross-rate table. Cached for offline use. |
-| **Offline Utilities** | `#/utilities` | JSON formatter/minifier, image resizer (canvas), text case/count tools, text→PDF export (pdf-lib, lazy-loaded). All 100% client-side — works with zero connectivity. |
-| **Live Feed** | `#/feed` | Low-data sports scores (60 s poll) + Nigerian-first news (Punch, Premium Times, Channels TV, Vanguard, The Cable, Daily Trust) and world headlines (BBC, Al Jazeera) every 5 min, with an outlet toggle, a homepage headlines card, and cached fallback when offline. |
+| **Tools** | `#/tools` | 100% client-side: JSON formatter/minifier, image resizer (canvas), text case/count tools, text→PDF export, and a **PDF Converter** — DOCX/HTML/MD/RTF/TXT, CSV/TSV/XLS/XLSX, JSON, images (PNG/JPG/WEBP/GIF/BMP/AVIF) → PDF, plus PDF merge. Works with zero connectivity. |
+| **News** | `#/` (home) | Nigerian-first headlines (Punch, Premium Times, Channels TV, Vanguard, The Cable, Daily Trust) + world (BBC, Al Jazeera) every 5 min, with an outlet toggle and cached fallback when offline. |
+| **Sport** | `#/sport` | Low-data scores across 13 leagues (EPL, La Liga, Serie A, Bundesliga, Ligue 1, UCL, NPFL, NBA, WNBA, NFL, MLB, NHL, NCAAM) via ESPN's public API, 60 s poll with cached fallback. |
 
 ## Folder structure
 
@@ -54,13 +55,20 @@ nexus-dash/
         ├── utilities/
         │   ├── manifest.tsx
         │   ├── UtilitiesModule.tsx
-        │   └── tools/          # JsonTool · ImageTool · TextTool · PdfTool
-        └── feed/
+        │   ├── tools/          # JsonTool · ImageTool · TextTool · PdfTool ·
+        │   │                   #   ConvertPdfTool + convert/ engine
+        │   │                   #   (docModel · parsers · render · images · merge)
+        ├── news/
+        │   ├── manifest.tsx
+        │   ├── api.ts → feed/feeds.ts  # RSS proxy chain, source registry, demo fallback
+        │   ├── prefs.ts        # Persisted enabled-outlets preference (localStorage)
+        │   ├── useNews.ts      # Visibility-aware polling hook
+        │   └── News.tsx
+        └── sport/
             ├── manifest.tsx
-            ├── api.ts          # Scores (ESPN) + news (RSS proxy chain), source registry, demo fallback
-            ├── prefs.ts        # Persisted enabled-outlets preference (localStorage)
-            ├── useFeeds.ts     # Visibility-aware polling hooks
-            ├── Scores.tsx · News.tsx · FeedModule.tsx
+            ├── api.ts → feed/feeds.ts  # ESPN multi-league scoreboard fetcher
+            ├── useScores.ts    # Visibility-aware polling hook
+            └── Scores.tsx
 ```
 
 ## TypeScript contracts (src/core/types.ts)
@@ -76,7 +84,21 @@ nexus-dash/
 1. **App shell** — `vite-plugin-pwa` (`injectManifest`) precaches every build asset; navigations are served from the precache via `NavigationRoute`.
 2. **Runtime data** — Frankfurter / CoinGecko / proxy requests use a `StaleWhileRevalidate` route capped at 64 entries / 24 h.
 3. **App-level cache** — `useCachedFetch` mirrors payloads into `localStorage`, so the last FX snapshot and feeds render instantly, even before the SW is active.
-4. **Utilities** — pure client-side (canvas, Blob, pdf-lib); no network at all.
+4. **Tools** — pure client-side (canvas, Blob, pdf-lib, mammoth, SheetJS); no network at all. The PDF Converter's pdf-lib (~430 kB) is a separate lazy chunk fetched only on first conversion.
+
+## PDF Converter (Tools → PDF Converter)
+
+Everything converts locally in the browser — no uploads:
+
+| Input | Engine |
+| --- | --- |
+| DOCX | mammoth → HTML → document model |
+| HTML/HTM, MD (marked), RTF, TXT | parsed to the shared document model |
+| CSV/TSV, XLS/XLSX (SheetJS), JSON | table model → rendered tables |
+| PNG/JPG/WEBP/GIF/BMP/AVIF | canvas rasterize → embedded, multiple images combine into one PDF |
+| PDF (+PDF) | pdf-lib copy-pages merge into `merged.pdf` |
+
+Options: page size (A4/Letter), orientation, font size, embed-document-images. Documents convert individually (`name.pdf`); all selected images join one `images.pdf`; PDFs merge into one `merged.pdf`.
 
 ## Deploying
 

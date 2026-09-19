@@ -38,4 +38,17 @@ export const toolsManifest: ToolDefinition[] = [
     icon: <Icon.pdf className="size-4" />,
     route: '/tools',
   },
+  {
+    id: 'tools.pdf-convert',
+    title: 'PDF Converter',
+    description: 'Convert DOCX, HTML, MD, RTF, CSV, XLSX, JSON, images and merge PDFs — offline',
+    keywords: [
+      'pdf', 'convert', 'converter', 'docx', 'word', 'html', 'markdown', 'rtf',
+      'csv', 'tsv', 'excel', 'xlsx', 'xls', 'json', 'image', 'png', 'jpeg',
+      'merge', 'combine', 'export', 'offline',
+    ],
+    group: 'Tools',
+    icon: <Icon.pdf className="size-4" />,
+    route: '/tools',
+  },
 ];
